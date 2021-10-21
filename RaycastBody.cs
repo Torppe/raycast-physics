@@ -6,8 +6,9 @@ public abstract class RaycastBody : MonoBehaviour
 {
     public int horizontalRaycount = 3;
     public int verticalRaycount = 3;
-    public float horizontalRaySpacing = 0.5f;
-    public float verticalRaySpacing = 0.5f;
+    protected float horizontalRaySpacing = 0.5f;
+    protected float verticalRaySpacing = 0.5f;
+
     protected RaycastOrigins raycastOrigins = new RaycastOrigins();
     protected CollisionInfo collisions = new CollisionInfo();
     protected BoxCollider boxCollider;
@@ -16,11 +17,16 @@ public abstract class RaycastBody : MonoBehaviour
     public virtual void Start()
     {
         boxCollider = GetComponent<BoxCollider>();
+        Bounds bounds = boxCollider.bounds;
+        bounds.Expand(-CustomPhysics.collisionOffset * 2);
+        horizontalRaySpacing = bounds.size.y / 2;
+        verticalRaySpacing = bounds.size.x / 2;
     }
 
     public void UpdateRaycastOrigins()
     {
         Bounds bounds = boxCollider.bounds;
+        bounds.Expand(-CustomPhysics.collisionOffset * 2);
 
         raycastOrigins.bottomLeft = new Vector2(bounds.min.x, bounds.min.y);
         raycastOrigins.bottomRight = new Vector2(bounds.max.x, bounds.min.y);
@@ -54,8 +60,8 @@ public abstract class RaycastBody : MonoBehaviour
 
             if (Physics.Raycast(raycastPosition, raycastDirection, out var hit, rayLength, collisionMask))
             {
-                vel.x = (hit.distance - CustomPhysics.collisionOffset) * directionX;
                 rayLength = hit.distance;
+                vel.x = (hit.distance - CustomPhysics.collisionOffset) * directionX;
 
                 if (directionX == 1)
                 {
@@ -81,12 +87,12 @@ public abstract class RaycastBody : MonoBehaviour
         for (int i = 0; i < verticalRaycount; i++)
         {
             Vector2 raycastPosition = directionY == -1 ? raycastOrigins.bottomLeft : raycastOrigins.topLeft;
-            raycastPosition += Vector2.right * (verticalRaySpacing * i);
+            raycastPosition += Vector2.right * (verticalRaySpacing * i + vel.x);
 
             if (Physics.Raycast(raycastPosition, raycastDirection, out var hit, rayLength, collisionMask))
             {
-                vel.y = (hit.distance - CustomPhysics.collisionOffset) * directionY;
                 rayLength = hit.distance;
+                vel.y = (hit.distance - CustomPhysics.collisionOffset) * directionY;
 
                 if (directionY == 1)
                 {
@@ -96,7 +102,7 @@ public abstract class RaycastBody : MonoBehaviour
                 {
                     collisions.below = true;
 
-                    if (!collisions.platform)
+                    if (!collisions.platform || collisions.platform.transform != hit.transform)
                         collisions.platform = hit.collider.GetComponent<Solid>();
                 }
             }
@@ -104,6 +110,13 @@ public abstract class RaycastBody : MonoBehaviour
             Debug.DrawRay(raycastPosition, raycastDirection * rayLength, Color.red);
             Debug.DrawRay(raycastPosition, raycastDirection * 1, Color.yellow);
         }
+    }
+
+    public bool CheckSquish()
+    {
+        var bounds = boxCollider.bounds;
+        bounds.Expand(-CustomPhysics.collisionOffset * 10);
+        return Physics.OverlapBox(bounds.center, bounds.size * 0.5f, Quaternion.identity, collisionMask).Length > 0;
     }
 
     public struct CollisionInfo

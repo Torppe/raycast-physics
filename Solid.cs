@@ -8,7 +8,7 @@ public class Solid : RaycastBody
 
     private Vector2 velocity;
     private Vector2 input;
-    private float speed = 15;
+    public float speed = 15;
 
     public override void Start()
     {
@@ -26,15 +26,18 @@ public class Solid : RaycastBody
         velocity = input * speed;
         Move(velocity * deltaTime);
 
-        ridingActor?.transform.Translate(velocity * deltaTime);
-        ridingActor = null;
+        if (ridingActor)
+        {
+            ridingActor.transform.Translate(velocity * deltaTime);
+            ridingActor = null;
+        }
     }
 
     public override void CollideX(ref Vector2 vel)
     {
         var directionX = Mathf.Sign(vel.x);
         var raycastDirection = Vector3.right * directionX;
-        float rayLength = Mathf.Abs(vel.x);
+        float rayLength = Mathf.Abs(vel.x) + CustomPhysics.collisionOffset;
 
         for (int i = 0; i < horizontalRaycount; i++)
         {
@@ -59,19 +62,18 @@ public class Solid : RaycastBody
             Debug.DrawRay(raycastPosition, raycastDirection * rayLength, Color.red);
             Debug.DrawRay(raycastPosition, raycastDirection * 1, Color.yellow);
         }
-
     }
 
     public override void CollideY(ref Vector2 vel)
     {
         var directionY = Mathf.Sign(vel.y);
         var raycastDirection = Vector3.up * directionY;
-        float rayLength = Mathf.Abs(vel.y);
+        float rayLength = Mathf.Abs(vel.y) + CustomPhysics.collisionOffset;
 
         for (int i = 0; i < verticalRaycount; i++)
         {
             Vector2 raycastPosition = directionY == -1 ? raycastOrigins.bottomLeft : raycastOrigins.topLeft;
-            raycastPosition += Vector2.right * (verticalRaySpacing * i);
+            raycastPosition += Vector2.right * (verticalRaySpacing * i + vel.x);
 
             if (Physics.Raycast(raycastPosition, raycastDirection, out var hit, rayLength, collisionMask))
             {
@@ -96,28 +98,3 @@ public class Solid : RaycastBody
         }
     }
 }
-
-// var raycastDirection = Vector3.right * Mathf.Sign(velocity.x);
-// var raycastPosition = transform.position + (raycastDirection * 0.5f);
-// var velocityX = Mathf.Abs(velocity.x);
-
-// if (Physics.Raycast(raycastPosition, raycastDirection, out var hit, velocityX, collisionMask))
-// {
-//     float displacementAmount = velocityX - hit.distance + CustomPhysics.collisionOffset;
-//     hit.transform.Translate(raycastDirection * displacementAmount);
-// }
-
-// Debug.DrawRay(raycastPosition, raycastDirection * Mathf.Abs(velocity.x), Color.red);
-
-
-// var raycastDirection = Vector3.up * Mathf.Sign(velocity.y);
-// var raycastPosition = transform.position + (raycastDirection * 0.5f);
-// var velocityY = Mathf.Abs(velocity.y);
-
-// if (Physics.Raycast(raycastPosition, raycastDirection, out var hit, velocityY, collisionMask))
-// {
-//     float displacementAmount = velocityY - hit.distance + CustomPhysics.collisionOffset;
-//     hit.transform.Translate(raycastDirection * displacementAmount);
-// }
-
-// Debug.DrawRay(raycastPosition, raycastDirection * Mathf.Abs(velocity.y), Color.red);
