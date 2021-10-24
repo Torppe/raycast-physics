@@ -33,7 +33,10 @@ public class Actor : RaycastBody
         Move(velocity * deltaTime);
 
         if (collisions.platform)
-            collisions.platform.ridingActor = this;
+        {
+            collisions.platform.ridingActors.Add(this);
+            collisions.below = true;
+        }
 
         CheckForSquish();
     }
@@ -47,10 +50,18 @@ public class Actor : RaycastBody
         }
     }
 
+    public void SetRiding(Solid platform)
+    {
+        collisions.platform = platform;
+        collisions.below = true;
+    }
+
     private void AdjustVelocity(float deltaTime)
     {
         if (collisions.below || collisions.above)
+        {
             velocity.y = 0;
+        }
 
         if (jumpInitiated)
         {

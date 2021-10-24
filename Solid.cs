@@ -4,7 +4,8 @@ using UnityEngine;
 
 public class Solid : RaycastBody
 {
-    public Actor ridingActor;
+    // public Actor ridingActor;
+    public HashSet<Actor> ridingActors = new HashSet<Actor>();
 
     private Vector2 velocity;
     private Vector2 input;
@@ -26,10 +27,17 @@ public class Solid : RaycastBody
         velocity = input * speed;
         Move(velocity * deltaTime);
 
-        if (ridingActor)
+        if (ridingActors.Count > 0)
         {
-            ridingActor.transform.Translate(velocity * deltaTime);
-            ridingActor = null;
+            foreach (var actor in ridingActors)
+            {
+                if (actor == null)
+                    continue;
+
+                actor.Move(velocity * deltaTime);
+                actor.SetRiding(this);
+            }
+            ridingActors.Clear();
         }
     }
 
@@ -77,14 +85,13 @@ public class Solid : RaycastBody
 
             if (Physics.Raycast(raycastPosition, raycastDirection, out var hit, rayLength, collisionMask))
             {
-                if (!hit.collider.GetComponent<Actor>() == ridingActor)
-                {
-                    float displacementAmount = rayLength - hit.distance + CustomPhysics.collisionOffset;
-                    hit.transform.Translate(raycastDirection * displacementAmount);
-                }
-
                 if (directionY == 1)
                 {
+                    if (hit.collider.TryGetComponent<Actor>(out var actor))
+                    {
+                        ridingActors.Add(actor);
+                    }
+
                     collisions.above = true;
                 }
                 else

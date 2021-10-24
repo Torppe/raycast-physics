@@ -101,9 +101,8 @@ public abstract class RaycastBody : MonoBehaviour
                 else
                 {
                     collisions.below = true;
-
-                    if (!collisions.platform || collisions.platform.transform != hit.transform)
-                        collisions.platform = hit.collider.GetComponent<Solid>();
+                    if (!collisions.platform && hit.collider.TryGetComponent<Solid>(out var platform))
+                        collisions.platform = platform;
                 }
             }
 
